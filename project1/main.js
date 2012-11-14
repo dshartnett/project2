@@ -9,7 +9,7 @@ window.requestAnimFrame = (function(){
 			function( callback ){window.setTimeout(callback, 1000 / 60);};
 })();
 
-var CANVAS_WIDTH = 1280;
+var CANVAS_WIDTH = 1024;
 var CANVAS_HEIGHT = 480;
 
 var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
@@ -606,12 +606,12 @@ function g_object(xpos, ypos, rad, charge)
 // Particle class
 function particle(xpos,ypos,mass,charge,pcolor,psize)
 {
-	this.X=xpos;
-	this.Y=ypos;
-	this.mass=mass;
-	this.charge=charge;
-	this.pcolor=pcolor;
-	this.psize=psize;
+	this.X = xpos;
+	this.Y = ypos;
+	this.mass = mass;
+	this.charge = charge;
+	this.pcolor = pcolor;
+	this.psize = psize;
 	this.halfpsize = psize/2;
 	this.vX = 0;
 	this.vY = 0;
@@ -621,23 +621,12 @@ function particle(xpos,ypos,mass,charge,pcolor,psize)
 	var C_WALL_LOSS = .5;
 	
 	this.updatep = function() {
-		if(this.X >= CANVAS_WIDTH) {
-			this.X = CANVAS_WIDTH - 1;
-			this.vX = -this.vX*C_WALL_LOSS;
-		}
-		else if(this.X <= 0) {
-			this.X = 1;
-			this.vX = -this.vX*C_WALL_LOSS;
-		}
+		if(this.X >= CANVAS_WIDTH) {this.X = CANVAS_WIDTH - 1;this.vX = -this.vX*C_WALL_LOSS;}
+		else if(this.X <= 0) {this.X = 1;this.vX = -this.vX*C_WALL_LOSS;}
 		
-		if(this.Y >= CANVAS_HEIGHT) {
-			this.Y = CANVAS_HEIGHT - 1;
-			this.vY = -this.vY*C_WALL_LOSS;
-		}
-		else if(this.Y <= 0) {
-			this.Y = 1;
-			this.vY = -this.vY*C_WALL_LOSS;
-		}
+		if(this.Y >= CANVAS_HEIGHT) {this.Y = CANVAS_HEIGHT - 1;this.vY = -this.vY*C_WALL_LOSS;}
+		else if(this.Y <= 0) {this.Y = 1; this.vY = -this.vY*C_WALL_LOSS;}
+		
 		this.vX = C_FRICTION*this.vX + C_RAND_MOV*(Math.random() - .5);
 		this.vY = C_FRICTION*this.vY + C_RAND_MOV*(Math.random() - .5);
 		
