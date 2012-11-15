@@ -1,5 +1,3 @@
-
-
 window.requestAnimFrame = (function(){
 	return  window.requestAnimationFrame       || 
 			window.webkitRequestAnimationFrame || 
@@ -23,12 +21,25 @@ var canvasMaxY;
 var mouseX = 0;
 var mouseY = 0;
 
+var FPS = 32;
+var PARTICLE_NUM = 100
+var OBJECT_NUM = 3;
+
 var sC = 0;	// second count
-var uC = 0;
+var uC = 0; // update count
 var dC = 0;	// draw count
+
+var uClast = 0;
+var dClast = 0;
+var uCfr = 0;
+var dCfr = 0;
 
 setTimeout("timer()",1000);
 function timer() {
+	uCfr = uC - uClast;
+	dCfr = dC - dClast;
+	uClast = uC;
+	dClast = dC;
 	sC++;
 	setTimeout("timer()",1000);
 }
@@ -60,9 +71,6 @@ function onMouseUp(evt) {
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].mouseup();
 }
 
-var FPS = 32;
-var PARTICLE_NUM = 100
-var OBJECT_NUM = 3;
 
 // Object array initialization
 var object_arr = [];
@@ -474,6 +482,8 @@ function g_object(xpos, ypos, rad, charge)
 	var C_ROTATION = 0.001;
 	var C_FRICTION = 0.98;
 	
+	var C_WALL_LOSS = 0.5;
+	
 	var lX = xpos;
 	var lY = ypos;
 	var vX = 0;
@@ -532,11 +542,11 @@ function g_object(xpos, ypos, rad, charge)
 		}
 		else
 		{
-			if ((this.X + this.radius) >= CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; vX = -vX/2;}
-			else if ((this.X - this.radius) <= 0) {this.X = this.radius; vX = -vX/2;}
+			if ((this.X + this.radius) >= CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; vX = -vX*C_WALL_LOSS;}
+			else if ((this.X - this.radius) <= 0) {this.X = this.radius; vX = -vX*C_WALL_LOSS;}
 			
-			if ((this.Y+this.radius) >= CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; vY = -vY/2;}
-			else if ((this.Y - this.radius) <= 0) {this.Y = this.radius; vY = -vY/2;}
+			if ((this.Y+this.radius) >= CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; vY = -vY*C_WALL_LOSS;}
+			else if ((this.Y - this.radius) <= 0) {this.Y = this.radius; vY = -vY*C_WALL_LOSS;}
 			
 			this.X += vX;
 			this.Y += vY;
@@ -616,9 +626,9 @@ function particle(xpos,ypos,mass,charge,pcolor,psize)
 	this.vX = 0;
 	this.vY = 0;
 	
-	var C_FRICTION = .99;
+	var C_FRICTION = 0.99;
 	var C_RAND_MOV = 0.04;
-	var C_WALL_LOSS = .5;
+	var C_WALL_LOSS = 0.5;
 	
 	this.updatep = function() {
 		if(this.X >= CANVAS_WIDTH) {this.X = CANVAS_WIDTH - 1;this.vX = -this.vX*C_WALL_LOSS;}
@@ -627,8 +637,8 @@ function particle(xpos,ypos,mass,charge,pcolor,psize)
 		if(this.Y >= CANVAS_HEIGHT) {this.Y = CANVAS_HEIGHT - 1;this.vY = -this.vY*C_WALL_LOSS;}
 		else if(this.Y <= 0) {this.Y = 1; this.vY = -this.vY*C_WALL_LOSS;}
 		
-		this.vX = C_FRICTION*this.vX + C_RAND_MOV*(Math.random() - .5);
-		this.vY = C_FRICTION*this.vY + C_RAND_MOV*(Math.random() - .5);
+		this.vX = C_FRICTION*this.vX + C_RAND_MOV*(Math.random() - 0.5);
+		this.vY = C_FRICTION*this.vY + C_RAND_MOV*(Math.random() - 0.5);
 		
 		this.X += this.vX;
 		this.Y += this.vY;
@@ -680,8 +690,9 @@ function draw()
 	canvas.fillText("Second count: " + sC,10,10);
 	canvas.fillText("Draw iteration count: " + dC,10,20);
 	canvas.fillText("Update count: " + uC,10,30);
-	canvas.fillText("Frame rate: " + (dC/sC).toFixed(2),10,40);
-	canvas.fillText("uC - dC: " + (uC-dC),10,50);
+	canvas.fillText("Draw rate: " + dCfr.toFixed(2),10,40);
+	canvas.fillText("Update rate: " + uCfr.toFixed(2),10,50);
+	canvas.fillText("uC - dC: " + (uC-dC),10,60);
 }
 
 setInterval(function() {update();/*draw();*/}, 1000/FPS);
