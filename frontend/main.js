@@ -24,6 +24,7 @@ var mouseY = 0;
 var FPS = 32;
 var PARTICLE_NUM = 100
 var OBJECT_NUM = 3;
+var U_S_L = 1/1; //universal speed limit, 1 pixel per 1 ms
 
 var sC = 0;	// second count
 var uC = 0; // update count
@@ -74,34 +75,34 @@ function onMouseUp(evt) {
 
 // Object array initialization
 var object_arr = [];
-for (var i = 0; i < 1; i++) object_arr[i] = new g_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, i%2?-500:500);
-for (var i = 1; i < OBJECT_NUM-2; i++) object_arr[i] = new l_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 30, Math.random()*2*Math.PI);
-for (var i = OBJECT_NUM-2; i < OBJECT_NUM; i++) object_arr[i] = new c_object(CANVAS_WIDTH/2,i%2?100:0+CANVAS_HEIGHT/2,60);
+for (var i = 0; i < 1; i++) object_arr[i] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, i%2?-500:500);
+for (var i = 1; i < OBJECT_NUM-2; i++) object_arr[i] = new L_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 30, Math.random()*2*Math.PI);
+for (var i = OBJECT_NUM-2; i < OBJECT_NUM; i++) object_arr[i] = new C_object(CANVAS_WIDTH/2,i%2?100:0+CANVAS_HEIGHT/2,60);
 
 
 // Particle array initialization
 var par_arr = [];
 for (var i = 0; i < PARTICLE_NUM; i++)
- par_arr[i] = new particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
+ par_arr[i] = new Particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
 
 
 // Button functions
 function addGreen() {
-	object_arr[OBJECT_NUM] = new g_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, 500);
+	object_arr[OBJECT_NUM] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, 500);
 	OBJECT_NUM++;
 }
 function addRed() {
-	object_arr[OBJECT_NUM] = new g_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, -500);
+	object_arr[OBJECT_NUM] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, -500);
 	OBJECT_NUM++;
 }
 
 function addLaser() {
-	object_arr[OBJECT_NUM] = new l_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 30, Math.random()*2*Math.PI);
+	object_arr[OBJECT_NUM] = new L_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 30, Math.random()*2*Math.PI);
 	OBJECT_NUM++;
 }
 
 function addCounter() {
-	object_arr[OBJECT_NUM] = new c_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(),60);
+	object_arr[OBJECT_NUM] = new C_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(),60);
 	OBJECT_NUM++;
 }
 
@@ -117,14 +118,14 @@ function changeParCount() {
 	PARTICLE_NUM = Number(document.getElementById('i1').value);
 	//PARTICLE_NUM = pn;
 	par_arr = [];
-	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i] = new particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
+	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i] = new Particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
 }
 
 // Counter object class
-function c_object(xpos, ypos, side)
+function C_object(x_pos, y_pos, side)
 {
-	this.X = xpos-side/2;
-	this.Y = ypos-side/2;
+	this.X = x_pos-side/2;
+	this.Y = y_pos-side/2;
 	this.side = side;
 	this.grd = canvas.createLinearGradient(this.X,this.Y,this.side,this.side);
 	
@@ -177,7 +178,7 @@ function c_object(xpos, ypos, side)
 		this.grabbedBody = false;
 	}
 	
-	this.update_object = function(par_arr)
+	this.update = function(par_arr)
 	{
 		var dis = Math.sqrt(Math.pow(this.X-mouseX,2) + Math.pow(this.Y-mouseY,2));
 		
@@ -220,13 +221,13 @@ function c_object(xpos, ypos, side)
 			
 			if (par_arr[i].X > this.X && par_arr[i].X < this.X+this.side && par_arr[i].Y > this.Y && par_arr[i].Y < this.Y+this.side)
 			{
-				switch (par_arr[i].pcolor)
+				switch (par_arr[i].p_color)
 				{
 					case "black": parCountB++; break;
 					case "purple": parCountP++; break;
 					case "lime": parCountL++; break;
 				}
-				//par_arr[i].pcolor=="black"?parCountB++:(par_arr[i].pcolor=="purple"?parCountP++:parCountL++);
+				//par_arr[i].p_color=="black"?parCountB++:(par_arr[i].p_color=="purple"?parCountP++:parCountL++);
 			}					
 		}
 	
@@ -258,7 +259,7 @@ function c_object(xpos, ypos, side)
 		else percentageB = percentageP = percentageL = 0;*/
 	}
 	
-	this.draw_object = function ()
+	this.draw = function ()
 	{
 		this.grd = canvas.createLinearGradient(this.X + this.flipStage*this.side,this.Y,this.side+this.X-this.flipStage*this.side,this.Y + this.side);
 		this.grd.addColorStop(0,"black");
@@ -314,10 +315,10 @@ function c_object(xpos, ypos, side)
 }
 
 // Laser object class
-function l_object(xpos, ypos, rad, angle)
+function L_object(x_pos, y_pos, rad, angle)
 {
-	this.X = xpos;
-	this.Y = ypos;
+	this.X = x_pos;
+	this.Y = y_pos;
 	this.radius = rad;
 	this.color = "purple";
 	this.grd = canvas.createRadialGradient(this.X, this.Y, 0, this.X, this.Y, 2*this.radius);
@@ -358,7 +359,7 @@ function l_object(xpos, ypos, rad, angle)
 	}
 	
 	
-	this.update_object = function(par_arr)
+	this.update = function(par_arr)
 	{
 		var dis = Math.sqrt(Math.pow(this.X-mouseX,2) + Math.pow(this.Y-mouseY,2));
 		
@@ -411,7 +412,7 @@ function l_object(xpos, ypos, rad, angle)
 		}
 	}
 	
-	this.draw_object = function ()
+	this.draw = function ()
 	{
 		this.grd = canvas.createRadialGradient(this.X, this.Y, 0, this.X, this.Y, 1*this.radius);
 		this.grd.addColorStop(0, "black")
@@ -458,10 +459,10 @@ function l_object(xpos, ypos, rad, angle)
 }
 
 // Gravity object class
-function g_object(xpos, ypos, rad, charge)
+function G_object(x_pos, y_pos, rad, charge)
 {
-	this.X = xpos;
-	this.Y = ypos;
+	this.X = x_pos;
+	this.Y = y_pos;
 	this.charge = charge;
 	this.radius = rad;
 	this.color = charge>0?"green":"red";
@@ -484,8 +485,8 @@ function g_object(xpos, ypos, rad, charge)
 	
 	var C_WALL_LOSS = 0.5;
 	
-	var lX = xpos;
-	var lY = ypos;
+	var lX = x_pos;
+	var lY = y_pos;
 	var vX = 0;
 	var vY = 0;
 	
@@ -505,26 +506,9 @@ function g_object(xpos, ypos, rad, charge)
 		drawRadius = 1;
 		drawRadCol = "gray";
 	}
-	/*
-	this.chargeup = function()
-	{
-		if (this.charge < 0) if (this.charge > -10000) this.charge -= 100;
-		if (this.charge > 0) if (this.charge < 10000) this.charge += 100;
-	}
-	
-	this.chargedown = function()
-	{
-		if (this.charge < 0) if (this.charge < -100) this.charge += 100;
-		if (this.charge > 0) if (this.charge > 100) this.charge -= 100;
-	}
-				
-	this.radiusup = function() {if (this.radius < 500) this.radius += 1;}
-	this.radiusdown = function() {if (this.radius > 5) this.radius -= 1;}
-	*/
-	this.update_object = function(par_arr)
+	this.update = function(par_arr,interval)
 	{
 		var dis = Math.sqrt(Math.pow(this.X-mouseX,2) + Math.pow(this.Y-mouseY,2));
-		//if (!this.grabbedRad && Math.abs(this.X - mouseX) < this.radius/2 && Math.abs(this.Y - mouseY) < this.radius/2) this.flipDir = 1;
 		
 		if (!this.grabbedRad && dis < this.radius - 5) this.flipDir = 1;
 		else this.flipDir = -1;
@@ -532,13 +516,20 @@ function g_object(xpos, ypos, rad, charge)
 		if (!this.grabbedBody && dis < this.radius + 5 && dis > this.radius - 5) {drawRadCol = "black"; drawRadius = 3;}
 		else {drawRadCol = "gray"; drawRadius = 1;}
 		
-		if (this.grabbedBody == true) {this.X = mouseX+grabX; this.Y = mouseY+grabY; this.flipDir = 1; vX = this.X-lX; vY = this.Y-lY;}
+		if (this.grabbedBody == true){
+			this.X = mouseX+grabX;
+			this.Y = mouseY+grabY;
+			this.flipDir = 1;
+			vX = (this.X-lX);
+			vY = (this.Y-lY);
+			if(Math.abs(vX) > U_S_L) vX = vX*U_S_L/Math.abs(vX);
+			if(Math.abs(vY) > U_S_L) vY = vY*U_S_L/Math.abs(vY);
+		}
 		else if (this.grabbedRad == true)
 		{
 			this.radius = Math.sqrt(Math.pow(this.X-mouseX,2) + Math.pow(this.Y-mouseY,2));
 			if (this.radius < 20) this.radius = 20;
 			else if (this.radius > 100) this.radius = 100;
-			//else this.radius = Math.sqrt((mouseX+grabX)*(mouseX+grabX) + (mouseY+grabY)*(mouseY+grabY));
 		}
 		else
 		{
@@ -548,9 +539,11 @@ function g_object(xpos, ypos, rad, charge)
 			if ((this.Y+this.radius) >= CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; vY = -vY*C_WALL_LOSS;}
 			else if ((this.Y - this.radius) <= 0) {this.Y = this.radius; vY = -vY*C_WALL_LOSS;}
 			
-			this.X += vX;
-			this.Y += vY;
+			this.X += vX*interval;
+			this.Y += vY*interval;
 		}
+		
+		console.log("vX, vY: " + vX + "    " + vY);
 		
 		if (this.flipDir > 0 && this.flipStage < 1)
 		{
@@ -592,7 +585,7 @@ function g_object(xpos, ypos, rad, charge)
 		lY = this.Y;
 	}
 	
-	this.draw_object = function ()
+	this.draw = function ()
 	{
 		this.grd = canvas.createRadialGradient(this.X, this.Y, 0, this.X, this.Y, 1*this.radius);
 		this.grd.addColorStop(0, "transparent")
@@ -614,15 +607,15 @@ function g_object(xpos, ypos, rad, charge)
 }
 
 // Particle class
-function particle(xpos,ypos,mass,charge,pcolor,psize)
+function Particle(x_pos,y_pos,mass,charge,p_color,p_size)
 {
-	this.X = xpos;
-	this.Y = ypos;
+	this.X = x_pos;
+	this.Y = y_pos;
 	this.mass = mass;
 	this.charge = charge;
-	this.pcolor = pcolor;
-	this.psize = psize;
-	this.halfpsize = psize/2;
+	this.p_color = p_color;
+	this.p_size = p_size;
+	this.half_p_size = p_size/2;
 	this.vX = 0;
 	this.vY = 0;
 	
@@ -630,7 +623,7 @@ function particle(xpos,ypos,mass,charge,pcolor,psize)
 	var C_RAND_MOV = 0.04;
 	var C_WALL_LOSS = 0.5;
 	
-	this.updatep = function() {
+	this.update = function() {
 		if(this.X >= CANVAS_WIDTH) {this.X = CANVAS_WIDTH - 1;this.vX = -this.vX*C_WALL_LOSS;}
 		else if(this.X <= 0) {this.X = 1;this.vX = -this.vX*C_WALL_LOSS;}
 		
@@ -644,24 +637,72 @@ function particle(xpos,ypos,mass,charge,pcolor,psize)
 		this.Y += this.vY;
 	}
 	
-	this.drawp = function() {
-		canvas.fillStyle = this.pcolor;
-		canvas.fillRect(this.X-this.halfpsize,this.Y-this.halfpsize,this.psize,this.psize);
+	this.draw = function() {
+		canvas.fillStyle = this.p_color;
+		canvas.fillRect(this.X-this.half_p_size,this.Y-this.half_p_size,this.p_size,this.p_size);
 	}
 	
 	return this;
 }
 
+function Player(x_pos, y_pos)
+{
+	this.X = x_pos;
+	this.Y = y_pos;
+	this.radius = 20;
+	
+	var vX = 0;
+	var vY = 0;
+	
+	var angle = 0;
+	var C_WALL_LOSS = 0.5;
+	
+	this.accelerate = function(){
+	}
+	this.deccelerate = function(){
+	}
+	this.rotateRight = function(){
+	}
+	this.rotateLeft = function(){
+	}
+	this.update = function(interval){
+		this.X += vX*interval;
+		this.Y += vY*interval;
+		
+		if ((this.X + this.radius) >= CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; vX = -vX*C_WALL_LOSS;}
+		else if ((this.X - this.radius) <= 0) {this.X = this.radius; vX = -vX*C_WALL_LOSS;}
+		
+		if ((this.Y+this.radius) >= CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; vY = -vY*C_WALL_LOSS;}
+		else if ((this.Y - this.radius) <= 0) {this.Y = this.radius; vY = -vY*C_WALL_LOSS;}
+	
+	}
+	this.draw = function(){
+		canvas.beginPath();
+		canvas.arc(this.X,this.Y,this.radius,0,2*Math.PI,false);
+		canvas.fillStyle = "black";
+		canvas.fill();
+		canvas.lineWidth = 1;
+		canvas.strokeStyle = "black";
+		canvas.stroke();
+	}
+	return this;
+}
+
+var player1 = new Player(100,100);
 function update()
 {
 	uC++;
-	/*if (keydown.d) player1.radiusup();
-	if (keydown.a) player1.radiusdown();
-	if (keydown.w) player1.chargeup();
-	if (keydown.s) player1.chargedown();
+	/*if (keydown.d) player1.rotateRight();
+	if (keydown.a) player1.rotateLeft();
+	if (keydown.w) player1.accelerate();
+	if (keydown.s) player1.deccelerate();
 	*/
-	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].updatep();
-	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update_object(par_arr);
+	time_int = Date.now() - time_then;
+	time_then = Date.now();
+	console.log("Global time interval: " + time_int);
+	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update();
+	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update(par_arr,time_int);
+	player1.draw();
 }
 
 var canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
@@ -683,8 +724,8 @@ function draw()
 	canvas.strokeStyle = "black";
 	canvas.stroke();
 
-	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].drawp();
-	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].draw_object();
+	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].draw();
+	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].draw();
 
 	canvas.fillStyle = "#000";
 	canvas.fillText("Second count: " + sC,10,10);
@@ -693,11 +734,14 @@ function draw()
 	canvas.fillText("Draw rate: " + dCfr.toFixed(2),10,40);
 	canvas.fillText("Update rate: " + uCfr.toFixed(2),10,50);
 	canvas.fillText("uC - dC: " + (uC-dC),10,60);
+	canvas.fillText("time_int: " + time_int.toFixed(2),10,70);
 	update(); // not sure about this...
 }
 
 // not so sure about this.... 
 //setInterval(function() {update();/*draw();*/}, 1000/FPS);
+var time_int = Date.now();
+var time_then = Date.now();
 var requestId = 0;
 update();
 requestId = window.requestAnimFrame(draw);
