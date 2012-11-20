@@ -1,6 +1,0 @@
-www:
- approot: frontend
- type: static
-server:
- approot: backend
- type: nodejs
