@@ -662,29 +662,32 @@ function Player(x_pos, y_pos)
 	var vY = 0;
 	
 	var angle = 0;
+	var C_FRICTION = 0.001;
 	var C_WALL_LOSS = 0.5;
+	var C_ACCELERATION = 0.0005;
+	var C_ROTATE_SPEED = 1/360;
 	
 	this.accelerate = function(interval){
-		vX += 1*interval*Math.cos(angle)/1000;
-		vY += 1*interval*Math.sin(angle)/1000;
+		vX += C_ACCELERATION*interval*Math.cos(angle);
+		vY += C_ACCELERATION*interval*Math.sin(angle);
 	}
 	this.deccelerate = function(interval){
-		vX -= 1*interval*Math.cos(angle)/1000;
-		vY -= 1*interval*Math.sin(angle)/1000;
+		vX -= C_ACCELERATION*interval*Math.cos(angle);
+		vY -= C_ACCELERATION*interval*Math.sin(angle);
 	}
 	this.rotateRight = function(interval){
-		angle += 1*interval/360;
+		angle += C_ROTATE_SPEED*interval;
 	}
 	this.rotateLeft = function(interval){
-		angle -= 1*interval/360;
+		angle -= C_ROTATE_SPEED*interval;
 	}
 	this.slideRight = function(interval){
-		vX -= 1*interval*Math.sin(angle)/1000;
-		vY += 1*interval*Math.cos(angle)/1000;
+		vX -= C_ACCELERATION*interval*Math.sin(angle);
+		vY += C_ACCELERATION*interval*Math.cos(angle);
 	}
 	this.slideLeft = function(interval){
-		vX += 1*interval*Math.sin(angle)/1000;
-		vY -= 1*interval*Math.cos(angle)/1000;
+		vX += C_ACCELERATION*interval*Math.sin(angle);
+		vY -= C_ACCELERATION*interval*Math.cos(angle);
 	}
 	this.fire = function(interval){
 		par_arr[PARTICLE_NUM] = new Particle(this.X, this.Y, 1000, 50, "lime",4);
@@ -695,6 +698,9 @@ function Player(x_pos, y_pos)
 	}
 	
 	this.update = function(interval){
+		// Fx = W = 0.5*m*v^2, del v = del sqrt(2Fx/m) ~= 1 - Cx
+		vX -= C_FRICTION*vX*interval;
+		vY -= C_FRICTION*vY*interval;
 		this.X += vX*interval;
 		this.Y += vY*interval;
 		
@@ -714,7 +720,7 @@ function Player(x_pos, y_pos)
 		canvas.beginPath();
 		canvas.moveTo(this.radius,0);
 		canvas.lineTo(this.radius*Math.cos(5*Math.PI/6),this.radius*Math.sin(5*Math.PI/6));
-//		canvas.lineTo(0,0);
+		canvas.lineTo(0,0);
 		canvas.lineTo(this.radius*Math.cos(7*Math.PI/6),this.radius*Math.sin(7*Math.PI/6));
 		canvas.lineTo(this.radius,0);
 		canvas.closePath();
@@ -723,7 +729,7 @@ function Player(x_pos, y_pos)
 	//	canvas.lineTo(this.X + this.radius*Math.cos(angle), this.Y + this.radius*Math.sin(angle));
 		
 		//canvas.arc(this.X,this.Y,this.radius,0,2*Math.PI,false);
-		canvas.fillStyle = "black";
+		canvas.fillStyle = "blue";
 		canvas.fill();
 		canvas.lineWidth = 1;
 		canvas.strokeStyle = "black";
