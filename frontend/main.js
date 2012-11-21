@@ -49,6 +49,11 @@ document.onmousemove = onMouseMove;
 document.onmousedown = onMouseDown;
 document.onmouseup = onMouseUp;
 
+key_down = {};
+
+window.onkeydown = function(keyCode) {console.log(keyCode.keyCode); key_down[keyCode.keyCode]=true;};
+window.onkeyup = function(keyCode) {console.log(keyCode.keyCode); key_down[keyCode.keyCode]=false;};
+
 init_mouse();
 window.onresize = function() {init_mouse();}
 
@@ -75,6 +80,7 @@ function onMouseUp(evt) {
 
 // Object array initialization
 var object_arr = [];
+OBJECT_NUM = 0;
 for (var i = 0; i < 1; i++) object_arr[i] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, i%2?-500:500);
 for (var i = 1; i < OBJECT_NUM-2; i++) object_arr[i] = new L_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 30, Math.random()*2*Math.PI);
 for (var i = OBJECT_NUM-2; i < OBJECT_NUM; i++) object_arr[i] = new C_object(CANVAS_WIDTH/2,i%2?100:0+CANVAS_HEIGHT/2,60);
@@ -82,17 +88,18 @@ for (var i = OBJECT_NUM-2; i < OBJECT_NUM; i++) object_arr[i] = new C_object(CAN
 
 // Particle array initialization
 var par_arr = [];
+PARTICLE_NUM = 0;
 for (var i = 0; i < PARTICLE_NUM; i++)
  par_arr[i] = new Particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
 
 
 // Button functions
 function addGreen() {
-	object_arr[OBJECT_NUM] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, 500);
+	object_arr[OBJECT_NUM] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, 50);
 	OBJECT_NUM++;
 }
 function addRed() {
-	object_arr[OBJECT_NUM] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, -500);
+	object_arr[OBJECT_NUM] = new G_object(CANVAS_WIDTH*0.8*Math.random(),CANVAS_HEIGHT*0.8*Math.random(), 50, -50);
 	OBJECT_NUM++;
 }
 
@@ -118,7 +125,7 @@ function changeParCount() {
 	PARTICLE_NUM = Number(document.getElementById('i1').value);
 	//PARTICLE_NUM = pn;
 	par_arr = [];
-	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i] = new Particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
+	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i] = new Particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 1000, i%3==0?10:(i%3==1?30:50),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
 }
 
 // Counter object class
@@ -480,7 +487,7 @@ function G_object(x_pos, y_pos, rad, charge)
 	var drawRadius = 1;
 	var drawRadCol = "gray";
 	
-	var C_ROTATION = 0.001;
+	var C_ROTATION = 0.000001;
 	var C_FRICTION = 0.98;
 	
 	var C_WALL_LOSS = 0.5;
@@ -520,8 +527,8 @@ function G_object(x_pos, y_pos, rad, charge)
 			this.X = mouseX+grabX;
 			this.Y = mouseY+grabY;
 			this.flipDir = 1;
-			vX = (this.X-lX);
-			vY = (this.Y-lY);
+			vX = (this.X-lX)/interval;
+			vY = (this.Y-lY)/interval;
 			if(Math.abs(vX) > U_S_L) vX = vX*U_S_L/Math.abs(vX);
 			if(Math.abs(vY) > U_S_L) vY = vY*U_S_L/Math.abs(vY);
 		}
@@ -543,7 +550,7 @@ function G_object(x_pos, y_pos, rad, charge)
 			this.Y += vY*interval;
 		}
 		
-		console.log("vX, vY: " + vX + "    " + vY);
+	//	console.log("vX, vY: " + vX + "    " + vY);
 		
 		if (this.flipDir > 0 && this.flipStage < 1)
 		{
@@ -567,15 +574,15 @@ function G_object(x_pos, y_pos, rad, charge)
 			{
 				distance = Math.sqrt(distance2);
 				force = this.charge*par_arr[i].charge/distance2;
-				par_arr[i].vX += disX*force/distance/par_arr[i].mass;
-				par_arr[i].vY += disY*force/distance/par_arr[i].mass;
+				par_arr[i].vX += interval*disX*force/distance/par_arr[i].mass;
+				par_arr[i].vY += interval*disY*force/distance/par_arr[i].mass;
 			}
 			else
 			{
 				//	par_arr[i].vX += 0.00001*disX*par_arr[i].mass;
 				//	par_arr[i].vY += 0.00001*disY*par_arr[i].mass;
-				par_arr[i].vX += C_ROTATION*(disX-disY);//-0.001*disY + 0.001*disX;
-				par_arr[i].vY += C_ROTATION*(disX+disY);//0.001*disX + 0.001*disY;
+				par_arr[i].vX += interval*C_ROTATION*(disX-disY);//-0.001*disY + 0.001*disX;
+				par_arr[i].vY += interval*C_ROTATION*(disX+disY);//0.001*disX + 0.001*disY;
 				par_arr[i].vX *= C_FRICTION;
 				par_arr[i].vY *= C_FRICTION;
 			}
@@ -620,10 +627,10 @@ function Particle(x_pos,y_pos,mass,charge,p_color,p_size)
 	this.vY = 0;
 	
 	var C_FRICTION = 0.99;
-	var C_RAND_MOV = 0.04;
+	var C_RAND_MOV = 0.002;
 	var C_WALL_LOSS = 0.5;
 	
-	this.update = function() {
+	this.update = function(interval) {
 		if(this.X >= CANVAS_WIDTH) {this.X = CANVAS_WIDTH - 1;this.vX = -this.vX*C_WALL_LOSS;}
 		else if(this.X <= 0) {this.X = 1;this.vX = -this.vX*C_WALL_LOSS;}
 		
@@ -633,8 +640,8 @@ function Particle(x_pos,y_pos,mass,charge,p_color,p_size)
 		this.vX = C_FRICTION*this.vX + C_RAND_MOV*(Math.random() - 0.5);
 		this.vY = C_FRICTION*this.vY + C_RAND_MOV*(Math.random() - 0.5);
 		
-		this.X += this.vX;
-		this.Y += this.vY;
+		this.X += this.vX*interval;
+		this.Y += this.vY*interval;
 	}
 	
 	this.draw = function() {
@@ -657,14 +664,36 @@ function Player(x_pos, y_pos)
 	var angle = 0;
 	var C_WALL_LOSS = 0.5;
 	
-	this.accelerate = function(){
+	this.accelerate = function(interval){
+		vX += 1*interval*Math.cos(angle)/1000;
+		vY += 1*interval*Math.sin(angle)/1000;
 	}
-	this.deccelerate = function(){
+	this.deccelerate = function(interval){
+		vX -= 1*interval*Math.cos(angle)/1000;
+		vY -= 1*interval*Math.sin(angle)/1000;
 	}
-	this.rotateRight = function(){
+	this.rotateRight = function(interval){
+		angle += 1*interval/360;
 	}
-	this.rotateLeft = function(){
+	this.rotateLeft = function(interval){
+		angle -= 1*interval/360;
 	}
+	this.slideRight = function(interval){
+		vX -= 1*interval*Math.sin(angle)/1000;
+		vY += 1*interval*Math.cos(angle)/1000;
+	}
+	this.slideLeft = function(interval){
+		vX += 1*interval*Math.sin(angle)/1000;
+		vY -= 1*interval*Math.cos(angle)/1000;
+	}
+	this.fire = function(interval){
+		par_arr[PARTICLE_NUM] = new Particle(this.X, this.Y, 1000, 50, "lime",4);
+		par_arr[PARTICLE_NUM].vX = 3*Math.cos(angle)/10 + vX;
+		par_arr[PARTICLE_NUM].vY = 3*Math.sin(angle)/10 + vY;
+		PARTICLE_NUM++;
+		console.log(PARTICLE_NUM + "   " + vX + "   " + vY);
+	}
+	
 	this.update = function(interval){
 		this.X += vX*interval;
 		this.Y += vY*interval;
@@ -677,13 +706,29 @@ function Player(x_pos, y_pos)
 	
 	}
 	this.draw = function(){
+	
+		canvas.save();
+		canvas.translate(this.X,this.Y);
+		canvas.rotate(angle);
+		
 		canvas.beginPath();
-		canvas.arc(this.X,this.Y,this.radius,0,2*Math.PI,false);
+		canvas.moveTo(this.radius,0);
+		canvas.lineTo(this.radius*Math.cos(5*Math.PI/6),this.radius*Math.sin(5*Math.PI/6));
+//		canvas.lineTo(0,0);
+		canvas.lineTo(this.radius*Math.cos(7*Math.PI/6),this.radius*Math.sin(7*Math.PI/6));
+		canvas.lineTo(this.radius,0);
+		canvas.closePath();
+	
+	//	canvas.moveTo(this.X,this.Y);
+	//	canvas.lineTo(this.X + this.radius*Math.cos(angle), this.Y + this.radius*Math.sin(angle));
+		
+		//canvas.arc(this.X,this.Y,this.radius,0,2*Math.PI,false);
 		canvas.fillStyle = "black";
 		canvas.fill();
 		canvas.lineWidth = 1;
 		canvas.strokeStyle = "black";
 		canvas.stroke();
+		canvas.restore();
 	}
 	return this;
 }
@@ -692,17 +737,21 @@ var player1 = new Player(100,100);
 function update()
 {
 	uC++;
-	/*if (keydown.d) player1.rotateRight();
-	if (keydown.a) player1.rotateLeft();
-	if (keydown.w) player1.accelerate();
-	if (keydown.s) player1.deccelerate();
-	*/
 	time_int = Date.now() - time_then;
 	time_then = Date.now();
-	console.log("Global time interval: " + time_int);
-	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update();
+	//console.log("Global time interval: " + time_int);
+
+	if (key_down[68]) player1.rotateRight(time_int);
+	if (key_down[65]) player1.rotateLeft(time_int);
+	if (key_down[87]) player1.accelerate(time_int);
+	if (key_down[83]) player1.deccelerate(time_int);
+	if (key_down[81]) player1.slideLeft(time_int);
+	if (key_down[69]) player1.slideRight(time_int);
+	if (key_down[76]) player1.fire(time_int);
+	
+	player1.update(time_int);
+	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update(time_int);
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update(par_arr,time_int);
-	player1.draw();
 }
 
 var canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
@@ -726,6 +775,7 @@ function draw()
 
 	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].draw();
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].draw();
+	player1.draw();
 
 	canvas.fillStyle = "#000";
 	canvas.fillText("Second count: " + sC,10,10);
