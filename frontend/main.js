@@ -7,13 +7,17 @@ window.requestAnimFrame = (function(){
 			function( callback ){window.setTimeout(callback, 1000 / 60);};
 })();
 
-var CANVAS_WIDTH = 1024;
-var CANVAS_HEIGHT = 480;
+var CANVAS_WIDTH = 1440;
+var CANVAS_HEIGHT = 800;
 
 var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
 var canvas = canvasElement.get(0).getContext("2d");
 canvasElement.appendTo('body');
 
+var zap_sound = new Audio("zap.wav");
+var damage_sound = new Audio("damage.wav");
+var dead_sound = new Audio("dead.mp3");
+		
 var canvasMinX;
 var canvasMaxX;
 var canvasMinY;
@@ -23,6 +27,7 @@ var mouseY = 0;
 
 var FPS = 32;
 var PARTICLE_NUM = 100
+var PLAYER_NUM = 3;
 var OBJECT_NUM = 3;
 var U_S_L = 1/1; //universal speed limit, 1 pixel per 1 ms
 
@@ -92,6 +97,8 @@ PARTICLE_NUM = 0;
 for (var i = 0; i < PARTICLE_NUM; i++)
  par_arr[i] = new Particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
 
+ var player_arr = [];
+ for (var i = 0; i < PLAYER_NUM; i++) player_arr[i] = new Player(0.8*CANVAS_WIDTH*Math.random(),0.8*CANVAS_HEIGHT*Math.random());
 
 // Button functions
 function addGreen() {
@@ -587,6 +594,19 @@ function G_object(x_pos, y_pos, rad, charge)
 				par_arr[i].vY *= C_FRICTION;
 			}
 		}
+		for (var i = 0; i < PLAYER_NUM; i++)
+		{
+			disX = this.X - player_arr[i].X;
+			disY = this.Y - player_arr[i].Y;
+			distance2 = disX*disX + disY*disY;
+			if (distance2 > this.radius*this.radius)
+			{
+				distance = Math.sqrt(distance2);
+				force = this.charge*player_arr[i].charge/distance2;
+				player_arr[i].vX += interval*disX*force/distance/player_arr[i].mass;
+				player_arr[i].vY += interval*disY*force/distance/player_arr[i].mass;
+			}
+		}
 		
 		lX = this.X;
 		lY = this.Y;
@@ -637,8 +657,8 @@ function Particle(x_pos,y_pos,mass,charge,p_color,p_size)
 		if(this.Y >= CANVAS_HEIGHT) {this.Y = CANVAS_HEIGHT - 1;this.vY = -this.vY*C_WALL_LOSS;}
 		else if(this.Y <= 0) {this.Y = 1; this.vY = -this.vY*C_WALL_LOSS;}
 		
-		this.vX = C_FRICTION*this.vX + C_RAND_MOV*(Math.random() - 0.5);
-		this.vY = C_FRICTION*this.vY + C_RAND_MOV*(Math.random() - 0.5);
+		//this.vX = C_FRICTION*this.vX + C_RAND_MOV*(Math.random() - 0.5);
+		//this.vY = C_FRICTION*this.vY + C_RAND_MOV*(Math.random() - 0.5);
 		
 		this.X += this.vX*interval;
 		this.Y += this.vY*interval;
@@ -658,64 +678,101 @@ function Player(x_pos, y_pos)
 	this.Y = y_pos;
 	this.radius = 20;
 	
-	var vX = 0;
-	var vY = 0;
+	this.vX = 0;
+	this.vY = 0;
 	
+	this.charge = 100;
+	this.mass = 1000;
+	
+	var shield_strength = 100;
 	var angle = 0;
+	var moving = false;
+	
+	var hit = false;
+	var hit_fade = 0;
+	var C_HIT_FADE_MAX = 500; // 2 seconds
+	
+	var team_color = Math.random()>.5?"red":"blue";
+	
+	var fire_battery = 0;
+	var C_RATE_OF_FIRE = 0.01; // 10 per second
+	var C_BULLET_SPEED = 500/1000;
 	var C_FRICTION = 0.001;
 	var C_WALL_LOSS = 0.5;
 	var C_ACCELERATION = 0.0005;
 	var C_ROTATE_SPEED = 1/360;
 	
 	this.accelerate = function(interval){
-		vX += C_ACCELERATION*interval*Math.cos(angle);
-		vY += C_ACCELERATION*interval*Math.sin(angle);
+		this.vX += C_ACCELERATION*interval*Math.cos(angle);
+		this.vY += C_ACCELERATION*interval*Math.sin(angle);
+		moving = true;
+		console.log(Math.sqrt(this.vX*this.vX+this.vY*this.vY));
 	}
 	this.deccelerate = function(interval){
-		vX -= C_ACCELERATION*interval*Math.cos(angle);
-		vY -= C_ACCELERATION*interval*Math.sin(angle);
+		this.vX -= C_ACCELERATION*interval*Math.cos(angle);
+		this.vY -= C_ACCELERATION*interval*Math.sin(angle);
+		moving = true;
 	}
 	this.rotateRight = function(interval){
 		angle += C_ROTATE_SPEED*interval;
+		moving = true;
 	}
 	this.rotateLeft = function(interval){
 		angle -= C_ROTATE_SPEED*interval;
+		moving = true;
 	}
 	this.slideRight = function(interval){
-		vX -= C_ACCELERATION*interval*Math.sin(angle);
-		vY += C_ACCELERATION*interval*Math.cos(angle);
+		this.vX -= C_ACCELERATION*interval*Math.sin(angle);
+		this.vY += C_ACCELERATION*interval*Math.cos(angle);
+		moving = true;
 	}
 	this.slideLeft = function(interval){
-		vX += C_ACCELERATION*interval*Math.sin(angle);
-		vY -= C_ACCELERATION*interval*Math.cos(angle);
+		this.vX += C_ACCELERATION*interval*Math.sin(angle);
+		this.vY -= C_ACCELERATION*interval*Math.cos(angle);
+		moving = true;
 	}
 	this.fire = function(interval){
-		par_arr[PARTICLE_NUM] = new Particle(this.X, this.Y, 1000, 50, "lime",4);
-		par_arr[PARTICLE_NUM].vX = 3*Math.cos(angle)/10 + vX;
-		par_arr[PARTICLE_NUM].vY = 3*Math.sin(angle)/10 + vY;
-		PARTICLE_NUM++;
-		console.log(PARTICLE_NUM + "   " + vX + "   " + vY);
+		if (fire_battery <= 0){
+			par_arr[PARTICLE_NUM] = new Particle(this.X, this.Y, 1000, 50, "lime",4);
+			par_arr[PARTICLE_NUM].vX = C_BULLET_SPEED*Math.cos(angle) + this.vX;
+			par_arr[PARTICLE_NUM].vY = C_BULLET_SPEED*Math.sin(angle) + this.vY;
+			PARTICLE_NUM++;
+			zap_sound.play();
+			fire_battery = 1;
+		}
+			//console.log(PARTICLE_NUM + "   " + this.vX + "   " + this.vY);
+			//console.log(fire_battery);
 	}
 	
 	this.update = function(interval){
 		// Fx = W = 0.5*m*v^2, del v = del sqrt(2Fx/m) ~= 1 - Cx
-		vX -= C_FRICTION*vX*interval;
-		vY -= C_FRICTION*vY*interval;
-		this.X += vX*interval;
-		this.Y += vY*interval;
 		
-		if ((this.X + this.radius) >= CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; vX = -vX*C_WALL_LOSS;}
-		else if ((this.X - this.radius) <= 0) {this.X = this.radius; vX = -vX*C_WALL_LOSS;}
+		this.vX -= C_FRICTION*this.vX*interval;
+		this.vY -= C_FRICTION*this.vY*interval;
+		this.X += this.vX*interval;
+		this.Y += this.vY*interval;
 		
-		if ((this.Y+this.radius) >= CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; vY = -vY*C_WALL_LOSS;}
-		else if ((this.Y - this.radius) <= 0) {this.Y = this.radius; vY = -vY*C_WALL_LOSS;}
+		if ((this.X + this.radius) >= CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		else if ((this.X - this.radius) <= 0) {this.X = this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		
+		if ((this.Y+this.radius) >= CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		else if ((this.Y - this.radius) <= 0) {this.Y = this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
 	
+		hit_fade -= interval;
+		
+		if (hit) {damage_sound.play(); hit_fade = C_HIT_FADE_MAX; hit=false;}
+		if (shield_strength <= 0){dead_sound.play(); shield_strength = 100;}
+		if (fire_battery > 0) fire_battery -= C_RATE_OF_FIRE*interval;
 	}
 	this.draw = function(){
 	
 		canvas.save();
 		canvas.translate(this.X,this.Y);
 		canvas.rotate(angle);
+		
+		var grd = canvas.createRadialGradient(0, 0, 0, 0, 0, 1*this.radius);
+		grd.addColorStop(0, team_color);
+		grd.addColorStop(1, "black");
 		
 		canvas.beginPath();
 		canvas.moveTo(this.radius,0);
@@ -729,17 +786,47 @@ function Player(x_pos, y_pos)
 	//	canvas.lineTo(this.X + this.radius*Math.cos(angle), this.Y + this.radius*Math.sin(angle));
 		
 		//canvas.arc(this.X,this.Y,this.radius,0,2*Math.PI,false);
-		canvas.fillStyle = "blue";
+		canvas.fillStyle = grd;
 		canvas.fill();
 		canvas.lineWidth = 1;
-		canvas.strokeStyle = "black";
+		canvas.strokeStyle = "gray";
 		canvas.stroke();
+			
+		if(moving){
+			canvas.beginPath();
+			canvas.moveTo(this.radius*Math.cos(5*Math.PI/6),this.radius*Math.sin(5*Math.PI/6));
+			canvas.lineTo(this.radius*Math.cos(5*Math.PI/6)+10*(Math.random()-.5),this.radius*Math.sin(5*Math.PI/6)-10*Math.random());
+			canvas.lineTo(this.radius*Math.cos(7*Math.PI/6)+10*(Math.random()-.5),this.radius*Math.sin(7*Math.PI/6)+10*Math.random());
+			canvas.lineTo(this.radius*Math.cos(7*Math.PI/6),this.radius*Math.sin(7*Math.PI/6));
+			canvas.lineWidth = 1;
+			canvas.strokeStyle = "white";
+			canvas.stroke();
+			
+			canvas.fillStyle = team_color;
+			canvas.fillRect(this.radius*Math.cos(5*Math.PI/6)-1,this.radius*Math.sin(5*Math.PI/6)-1,2,2);
+			canvas.fillRect(this.radius*Math.cos(7*Math.PI/6)-1,this.radius*Math.sin(7*Math.PI/6)-1,2,2);
+		}
+		
+		if (hit_fade > 0){
+			canvas.beginPath();
+			canvas.arc(0,0,1.3*this.radius,0,2*Math.PI,false);
+			grd = canvas.createRadialGradient(0, 0, 0, 0, 0, this.radius*(2/*-2*shield_strength/100*/));
+			grd.addColorStop(0, "transparent");
+			grd.addColorStop(1-hit_fade/C_HIT_FADE_MAX, "cyan");
+			grd.addColorStop(1, "transparent");
+			canvas.fillStyle = grd;
+			canvas.fill();
+			canvas.lineWidth = .1;//shield_strength/10;
+			canvas.strokeStyle = "white";
+			canvas.stroke();
+		}
+		
 		canvas.restore();
+		moving = false;
 	}
 	return this;
 }
 
-var player1 = new Player(100,100);
 function update()
 {
 	uC++;
@@ -747,28 +834,34 @@ function update()
 	time_then = Date.now();
 	//console.log("Global time interval: " + time_int);
 
-	if (key_down[68]) player1.rotateRight(time_int);
-	if (key_down[65]) player1.rotateLeft(time_int);
-	if (key_down[87]) player1.accelerate(time_int);
-	if (key_down[83]) player1.deccelerate(time_int);
-	if (key_down[81]) player1.slideLeft(time_int);
-	if (key_down[69]) player1.slideRight(time_int);
-	if (key_down[76]) player1.fire(time_int);
+	if (key_down[39]) player_arr[0].rotateRight(time_int);
+	if (key_down[37]) player_arr[0].rotateLeft(time_int);
+	if (key_down[38]) player_arr[0].accelerate(time_int);
+	if (key_down[40]) player_arr[0].deccelerate(time_int);
+	if (key_down[69]) player_arr[0].slideLeft(time_int);
+	if (key_down[82]) player_arr[0].slideRight(time_int);
+	if (key_down[83]) player_arr[0].fire(time_int);
 	
-	player1.update(time_int);
 	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update(time_int);
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update(par_arr,time_int);
+	for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].update(time_int);
 }
 
 var canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
 canvas_grd.addColorStop(0,"white");
 canvas_grd.addColorStop(0.5,"gray");
-canvas_grd.addColorStop(1,"white");
+canvas_grd.addColorStop(1,"black");
 
 function draw()
 {
 	requestId = window.requestAnimFrame(draw);
 	dC++;
+
+	canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
+	canvas_grd.addColorStop(0,"white");
+	canvas_grd.addColorStop(0.5,"gray");
+	canvas_grd.addColorStop(1,"black");
+
 	canvas.beginPath();
 	//canvas.clearRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
 	canvas.rect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
@@ -781,7 +874,7 @@ function draw()
 
 	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].draw();
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].draw();
-	player1.draw();
+	for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].draw();
 
 	canvas.fillStyle = "#000";
 	canvas.fillText("Second count: " + sC,10,10);
