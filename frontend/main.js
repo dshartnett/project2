@@ -14,9 +14,9 @@ var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_H
 var canvas = canvasElement.get(0).getContext("2d");
 canvasElement.appendTo('body');
 
-var zap_sound = new Audio("zap.wav");
-var damage_sound = new Audio("damage.wav");
-var dead_sound = new Audio("dead.mp3");
+var zap_sound = new Audio("project2_sounds/zap.wav");
+var damage_sound = new Audio("project2_sounds/damage.wav");
+var dead_sound = new Audio("project2_sounds/dead.mp3");
 		
 var canvasMinX;
 var canvasMaxX;
