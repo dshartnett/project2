@@ -7,8 +7,8 @@ window.requestAnimFrame = (function(){
 			function( callback ){window.setTimeout(callback, 1000 / 60);};
 })();
 
-var CANVAS_WIDTH = 1440;
-var CANVAS_HEIGHT = 800;
+var CANVAS_WIDTH = 1024;
+var CANVAS_HEIGHT = 480;
 
 var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
 var canvas = canvasElement.get(0).getContext("2d");
@@ -25,7 +25,7 @@ var canvasMaxY;
 var mouseX = 0;
 var mouseY = 0;
 
-var FPS = 32;
+var FPS = 60;
 var PARTICLE_NUM = 100
 var PLAYER_NUM = 3;
 var OBJECT_NUM = 3;
@@ -831,7 +831,6 @@ function update()
 {
 	uC++;
 	time_int = Date.now() - time_then;
-	time_then = Date.now();
 	//console.log("Global time interval: " + time_int);
 
 	if (key_down[39]) player_arr[0].rotateRight(time_int);
@@ -845,6 +844,7 @@ function update()
 	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update(time_int);
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update(par_arr,time_int);
 	for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].update(time_int);
+	time_then = Date.now();
 }
 
 var canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
@@ -858,7 +858,7 @@ function draw()
 	dC++;
 
 	canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
-	canvas_grd.addColorStop(0,"white");
+	canvas_grd.addColorStop(0,"black");
 	canvas_grd.addColorStop(0.5,"gray");
 	canvas_grd.addColorStop(1,"black");
 
@@ -876,7 +876,7 @@ function draw()
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].draw();
 	for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].draw();
 
-	canvas.fillStyle = "#000";
+	canvas.fillStyle = "lime";
 	canvas.fillText("Second count: " + sC,10,10);
 	canvas.fillText("Draw iteration count: " + dC,10,20);
 	canvas.fillText("Update count: " + uC,10,30);
@@ -884,11 +884,11 @@ function draw()
 	canvas.fillText("Update rate: " + uCfr.toFixed(2),10,50);
 	canvas.fillText("uC - dC: " + (uC-dC),10,60);
 	canvas.fillText("time_int: " + time_int.toFixed(2),10,70);
-	update(); // not sure about this...
+	//update(); // not sure about this...
 }
 
 // not so sure about this.... 
-//setInterval(function() {update();/*draw();*/}, 1000/FPS);
+setInterval(function() {update();/*draw();*/}, 1000/FPS);
 var time_int = Date.now();
 var time_then = Date.now();
 var requestId = 0;
