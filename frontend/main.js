@@ -4,8 +4,13 @@ window.requestAnimFrame = (function(){
 			window.mozRequestAnimationFrame    || 
 			window.oRequestAnimationFrame      || 
 			window.msRequestAnimationFrame     || 
-			function( callback ){window.setTimeout(callback, 1000 / 60);};
+			function( callback ){window.setTimeout(callback, 1000 / FPS);};
 })();
+
+
+var server_url = 'http://localhost:8080';
+var socket = io.connect(server_url);
+var C_PING_TIME = 1000; // ping every second
 
 var CANVAS_WIDTH = 1024;
 var CANVAS_HEIGHT = 480;
@@ -26,8 +31,9 @@ var mouseX = 0;
 var mouseY = 0;
 
 var FPS = 60;
+var UPS = 60;
 var PARTICLE_NUM = 100
-var PLAYER_NUM = 3;
+var PLAYER_NUM = 1;
 var OBJECT_NUM = 3;
 var U_S_L = 1/1; //universal speed limit, 1 pixel per 1 ms
 
@@ -98,7 +104,7 @@ for (var i = 0; i < PARTICLE_NUM; i++)
  par_arr[i] = new Particle(Math.random()*CANVAS_WIDTH, Math.random()*CANVAS_HEIGHT, 100, i%3==0?100:(i%3==1?300:500),i%3==0?"black":(i%3==1?"purple":"lime")/*i%2?100:300,i%2?"black":"lime"*/,4);
 
  var player_arr = [];
- for (var i = 0; i < PLAYER_NUM; i++) player_arr[i] = new Player(0.8*CANVAS_WIDTH*Math.random(),0.8*CANVAS_HEIGHT*Math.random());
+ for (var i = 0; i < PLAYER_NUM; i++) player_arr[i] = new Player(0.8*CANVAS_WIDTH*Math.random(),0.8*CANVAS_HEIGHT*Math.random(), "red");
 
 // Button functions
 function addGreen() {
@@ -672,11 +678,13 @@ function Particle(x_pos,y_pos,mass,charge,p_color,p_size)
 	return this;
 }
 
-function Player(x_pos, y_pos)
+function Player(x_pos, y_pos, team)
 {
 	this.X = x_pos;
 	this.Y = y_pos;
 	this.radius = 20;
+	
+	var team_color = team;//Math.random()>.5?"red":"blue";
 	
 	this.vX = 0;
 	this.vY = 0;
@@ -692,21 +700,20 @@ function Player(x_pos, y_pos)
 	var hit_fade = 0;
 	var C_HIT_FADE_MAX = 500; // 2 seconds
 	
-	var team_color = Math.random()>.5?"red":"blue";
 	
 	var fire_battery = 0;
 	var C_RATE_OF_FIRE = 0.01; // 10 per second
-	var C_BULLET_SPEED = 500/1000;
+	var C_BULLET_SPEED = 500/1000; // 500 pixels per second
 	var C_FRICTION = 0.001;
 	var C_WALL_LOSS = 0.5;
-	var C_ACCELERATION = 0.0005;
+	var C_ACCELERATION = 0.0005;// 500 pixels per second per second
 	var C_ROTATE_SPEED = 1/360;
 	
 	this.accelerate = function(interval){
 		this.vX += C_ACCELERATION*interval*Math.cos(angle);
 		this.vY += C_ACCELERATION*interval*Math.sin(angle);
 		moving = true;
-		console.log(Math.sqrt(this.vX*this.vX+this.vY*this.vY));
+	//	console.log(Math.sqrt(this.vX*this.vX+this.vY*this.vY));
 	}
 	this.deccelerate = function(interval){
 		this.vX -= C_ACCELERATION*interval*Math.cos(angle);
@@ -752,15 +759,15 @@ function Player(x_pos, y_pos)
 		this.X += this.vX*interval;
 		this.Y += this.vY*interval;
 		
-		if ((this.X + this.radius) >= CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
-		else if ((this.X - this.radius) <= 0) {this.X = this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		if ((this.X + this.radius) > CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		else if ((this.X - this.radius) < 0) {this.X = this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
 		
-		if ((this.Y+this.radius) >= CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
-		else if ((this.Y - this.radius) <= 0) {this.Y = this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		if ((this.Y+this.radius) > CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		else if ((this.Y - this.radius) < 0) {this.Y = this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
 	
 		hit_fade -= interval;
 		
-		if (hit) {damage_sound.play(); hit_fade = C_HIT_FADE_MAX; hit=false;}
+		if (hit) {/*damage_sound.play();*/ hit_fade = C_HIT_FADE_MAX; hit=false; /*console.log("damage");*/}
 		if (shield_strength <= 0){dead_sound.play(); shield_strength = 100;}
 		if (fire_battery > 0) fire_battery -= C_RATE_OF_FIRE*interval;
 	}
@@ -844,8 +851,15 @@ function update()
 	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update(time_int);
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update(par_arr,time_int);
 	for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].update(time_int);
+	if (ping_time > C_PING_TIME){
+		socket.emit('ping', time_int);
+		ping_time = 0;
+	}
+	ping_time += time_int;
 	time_then = Date.now();
 }
+
+socket.on('pong', function(data){console.log("ponged " + data);});
 
 var canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
 canvas_grd.addColorStop(0,"white");
@@ -888,9 +902,10 @@ function draw()
 }
 
 // not so sure about this.... 
-setInterval(function() {update();/*draw();*/}, 1000/FPS);
+setInterval(function() {update();/*draw();*/}, 1000/UPS);
 var time_int = Date.now();
 var time_then = Date.now();
+var ping_time = 0;
 var requestId = 0;
 update();
 requestId = window.requestAnimFrame(draw);
