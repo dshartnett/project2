@@ -13,7 +13,7 @@ var socket = io.connect(server_url);
 var C_PING_TIME = 1000; // ping every second
 
 var CANVAS_WIDTH = 1024;
-var CANVAS_HEIGHT = 480;
+var CANVAS_HEIGHT = 400;
 
 var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
 var canvas = canvasElement.get(0).getContext("2d");
@@ -31,7 +31,7 @@ var mouseX = 0;
 var mouseY = 0;
 
 var FPS = 60;
-var UPS = 60;
+var UPS = 33;
 var PARTICLE_NUM = 100
 var PLAYER_NUM = 1;
 var OBJECT_NUM = 3;
@@ -850,16 +850,20 @@ function update()
 	
 	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update(time_int);
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update(par_arr,time_int);
-	for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].update(time_int);
+	//for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].update(time_int);
+	player_arr[0].update(time_int);
+	
 	if (ping_time > C_PING_TIME){
 		socket.emit('ping', time_int);
 		ping_time = 0;
 	}
+		socket.emit('player_position', {'x':player_arr[0].X, 'y':player_arr[0].Y});
 	ping_time += time_int;
 	time_then = Date.now();
 }
 
-socket.on('pong', function(data){console.log("ponged " + data);});
+socket.on('pong', function(data){console.log("ponged, player # = " + data);});
+socket.on('player_position', function(data){console.log("player data: " + data.x + " " + data.y);});
 
 var canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
 canvas_grd.addColorStop(0,"white");

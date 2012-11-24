@@ -16,8 +16,10 @@ function handler(request, response) {request.addListener('end', function () {fil
 // Delete this row if you want to see debug messages
 //io.set('log level', 1);
 
+var PLAYER_NUM = 0;
 // Listen for incoming connections from clients
 io.sockets.on('connection', function (socket) {
+	PLAYER_NUM++;
 	// Start listening for mouse move events
 	/*
 	socket.on('mousemove', function (data) {
@@ -27,5 +29,7 @@ io.sockets.on('connection', function (socket) {
 		socket.broadcast.emit('moving', data);
 	});*/
 	
-	socket.on('ping', function(data) { console.log("pinged " + data); socket.emit("pong","yo");});
+	socket.on('ping', function(data) { console.log("pinged " + data); socket.emit("pong",PLAYER_NUM);});
+	socket.on('player_position', function(data) {socket.broadcast.emit('player_position',data);});
+	socket.on('disconnect', function() {PLAYER_NUM--;});
 });
