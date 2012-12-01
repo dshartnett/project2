@@ -14,12 +14,15 @@ app.listen(8080);
 function handler(request, response) {request.addListener('end', function () {fileServer.serve(request, response);}); }
 
 // Delete this row if you want to see debug messages
-//io.set('log level', 1);
+io.set('log level', 1);
 
-var PLAYER_NUM = 0;
+var PLAYER_ID = 0;
+var player_list = {};
 // Listen for incoming connections from clients
 io.sockets.on('connection', function (socket) {
-	PLAYER_NUM++;
+	PLAYER_ID++;
+
+	player_list[socket.id] = {"player_id":PLAYER_ID,x:0,y:0,angle:0};
 	// Start listening for mouse move events
 	/*
 	socket.on('mousemove', function (data) {
@@ -29,7 +32,11 @@ io.sockets.on('connection', function (socket) {
 		socket.broadcast.emit('moving', data);
 	});*/
 	
-	socket.on('ping', function(data) { console.log("pinged " + data); socket.emit("pong",PLAYER_NUM);});
-	socket.on('player_position', function(data) {socket.broadcast.emit('player_position',data);});
-	socket.on('disconnect', function() {PLAYER_NUM--;});
+	socket.on('ping', function(data) { console.log("pinged interval:" + data/* + " socket id: " + socket.id*/); socket.emit("pong",PLAYER_ID);});
+	socket.on('player_position', function(data) {
+		player_list[socket.id].x = data.x;
+		player_list[socket.id].y = data.y;
+		socket.broadcast.emit('player_position',data);
+	});
+	socket.on('disconnect', function() {socket.broadcast.emit('player_removed', PLAYER_ID); delete player_list[socket.id];});
 });

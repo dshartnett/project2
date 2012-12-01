@@ -7,13 +7,12 @@ window.requestAnimFrame = (function(){
 			function( callback ){window.setTimeout(callback, 1000 / FPS);};
 })();
 
-
 var server_url = 'http://localhost:8080';
 var socket = io.connect(server_url);
-var C_PING_TIME = 1000; // ping every second
+var C_PING_TIME = 3000; // ping interval
 
-var CANVAS_WIDTH = 1024;
-var CANVAS_HEIGHT = 400;
+var CANVAS_WIDTH = 960;
+var CANVAS_HEIGHT = 360;
 
 var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
 var canvas = canvasElement.get(0).getContext("2d");
@@ -540,6 +539,7 @@ function G_object(x_pos, y_pos, rad, charge)
 			this.X = mouseX+grabX;
 			this.Y = mouseY+grabY;
 			this.flipDir = 1;
+
 			vX = (this.X-lX)/interval;
 			vY = (this.Y-lY)/interval;
 			if(Math.abs(vX) > U_S_L) vX = vX*U_S_L/Math.abs(vX);
@@ -683,6 +683,9 @@ function Player(x_pos, y_pos, team)
 	this.X = x_pos;
 	this.Y = y_pos;
 	this.radius = 20;
+
+	this.angle = 0;
+	this.shield_strength = 100;
 	
 	var team_color = team;//Math.random()>.5?"red":"blue";
 	
@@ -692,8 +695,8 @@ function Player(x_pos, y_pos, team)
 	this.charge = 100;
 	this.mass = 1000;
 	
-	var shield_strength = 100;
-	var angle = 0;
+	//var shield_strength = 100;
+	//var angle = 0;
 	var moving = false;
 	
 	var hit = false;
@@ -710,39 +713,39 @@ function Player(x_pos, y_pos, team)
 	var C_ROTATE_SPEED = 1/360;
 	
 	this.accelerate = function(interval){
-		this.vX += C_ACCELERATION*interval*Math.cos(angle);
-		this.vY += C_ACCELERATION*interval*Math.sin(angle);
+		this.vX += C_ACCELERATION*interval*Math.cos(this.angle);
+		this.vY += C_ACCELERATION*interval*Math.sin(this.angle);
 		moving = true;
 	//	console.log(Math.sqrt(this.vX*this.vX+this.vY*this.vY));
 	}
 	this.deccelerate = function(interval){
-		this.vX -= C_ACCELERATION*interval*Math.cos(angle);
-		this.vY -= C_ACCELERATION*interval*Math.sin(angle);
+		this.vX -= C_ACCELERATION*interval*Math.cos(this.angle);
+		this.vY -= C_ACCELERATION*interval*Math.sin(this.angle);
 		moving = true;
 	}
 	this.rotateRight = function(interval){
-		angle += C_ROTATE_SPEED*interval;
+		this.angle += C_ROTATE_SPEED*interval;
 		moving = true;
 	}
 	this.rotateLeft = function(interval){
-		angle -= C_ROTATE_SPEED*interval;
+		this.angle -= C_ROTATE_SPEED*interval;
 		moving = true;
 	}
 	this.slideRight = function(interval){
-		this.vX -= C_ACCELERATION*interval*Math.sin(angle);
-		this.vY += C_ACCELERATION*interval*Math.cos(angle);
+		this.vX -= C_ACCELERATION*interval*Math.sin(this.angle);
+		this.vY += C_ACCELERATION*interval*Math.cos(this.angle);
 		moving = true;
 	}
 	this.slideLeft = function(interval){
-		this.vX += C_ACCELERATION*interval*Math.sin(angle);
-		this.vY -= C_ACCELERATION*interval*Math.cos(angle);
+		this.vX += C_ACCELERATION*interval*Math.sin(this.angle);
+		this.vY -= C_ACCELERATION*interval*Math.cos(this.angle);
 		moving = true;
 	}
 	this.fire = function(interval){
 		if (fire_battery <= 0){
 			par_arr[PARTICLE_NUM] = new Particle(this.X, this.Y, 1000, 50, "lime",4);
-			par_arr[PARTICLE_NUM].vX = C_BULLET_SPEED*Math.cos(angle) + this.vX;
-			par_arr[PARTICLE_NUM].vY = C_BULLET_SPEED*Math.sin(angle) + this.vY;
+			par_arr[PARTICLE_NUM].vX = C_BULLET_SPEED*Math.cos(this.angle) + this.vX;
+			par_arr[PARTICLE_NUM].vY = C_BULLET_SPEED*Math.sin(this.angle) + this.vY;
 			PARTICLE_NUM++;
 			zap_sound.play();
 			fire_battery = 1;
@@ -759,23 +762,23 @@ function Player(x_pos, y_pos, team)
 		this.X += this.vX*interval;
 		this.Y += this.vY*interval;
 		
-		if ((this.X + this.radius) > CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
-		else if ((this.X - this.radius) < 0) {this.X = this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		if ((this.X + this.radius) > CANVAS_WIDTH){this.X = CANVAS_WIDTH-this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; this.shield_strength -= 1;}
+		else if ((this.X - this.radius) < 0) {this.X = this.radius; this.vX = -this.vX*C_WALL_LOSS; hit=true; this.shield_strength -= 1;}
 		
-		if ((this.Y+this.radius) > CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
-		else if ((this.Y - this.radius) < 0) {this.Y = this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; shield_strength -= 1;}
+		if ((this.Y+this.radius) > CANVAS_HEIGHT){this.Y = CANVAS_HEIGHT-this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; this.shield_strength -= 1;}
+		else if ((this.Y - this.radius) < 0) {this.Y = this.radius; this.vY = -this.vY*C_WALL_LOSS; hit=true; this.shield_strength -= 1;}
 	
 		hit_fade -= interval;
 		
 		if (hit) {/*damage_sound.play();*/ hit_fade = C_HIT_FADE_MAX; hit=false; /*console.log("damage");*/}
-		if (shield_strength <= 0){dead_sound.play(); shield_strength = 100;}
+		if (this.shield_strength <= 0){dead_sound.play(); this.shield_strength = 100;}
 		if (fire_battery > 0) fire_battery -= C_RATE_OF_FIRE*interval;
 	}
 	this.draw = function(){
 	
 		canvas.save();
 		canvas.translate(this.X,this.Y);
-		canvas.rotate(angle);
+		canvas.rotate(this.angle);
 		
 		var grd = canvas.createRadialGradient(0, 0, 0, 0, 0, 1*this.radius);
 		grd.addColorStop(0, team_color);
@@ -790,7 +793,7 @@ function Player(x_pos, y_pos, team)
 		canvas.closePath();
 	
 	//	canvas.moveTo(this.X,this.Y);
-	//	canvas.lineTo(this.X + this.radius*Math.cos(angle), this.Y + this.radius*Math.sin(angle));
+	//	canvas.lineTo(this.X + this.radius*Math.cos(this.angle), this.Y + this.radius*Math.sin(this.angle));
 		
 		//canvas.arc(this.X,this.Y,this.radius,0,2*Math.PI,false);
 		canvas.fillStyle = grd;
@@ -817,13 +820,13 @@ function Player(x_pos, y_pos, team)
 		if (hit_fade > 0){
 			canvas.beginPath();
 			canvas.arc(0,0,1.3*this.radius,0,2*Math.PI,false);
-			grd = canvas.createRadialGradient(0, 0, 0, 0, 0, this.radius*(2/*-2*shield_strength/100*/));
+			grd = canvas.createRadialGradient(0, 0, 0, 0, 0, this.radius*(2/*-2*this.shield_strength/100*/));
 			grd.addColorStop(0, "transparent");
 			grd.addColorStop(1-hit_fade/C_HIT_FADE_MAX, "cyan");
 			grd.addColorStop(1, "transparent");
 			canvas.fillStyle = grd;
 			canvas.fill();
-			canvas.lineWidth = .1;//shield_strength/10;
+			canvas.lineWidth = .1;//this.shield_strength/10;
 			canvas.strokeStyle = "white";
 			canvas.stroke();
 		}
@@ -855,15 +858,16 @@ function update()
 	
 	if (ping_time > C_PING_TIME){
 		socket.emit('ping', time_int);
+		socket.emit('player_position', {'x':player_arr[0].X, 'y':player_arr[0].Y});
 		ping_time = 0;
 	}
-		socket.emit('player_position', {'x':player_arr[0].X, 'y':player_arr[0].Y});
 	ping_time += time_int;
 	time_then = Date.now();
 }
 
 socket.on('pong', function(data){console.log("ponged, player # = " + data);});
 socket.on('player_position', function(data){console.log("player data: " + data.x + " " + data.y);});
+socket.on('player_removed', function(data){console.log("player id left game: " + data);});
 
 var canvas_grd = canvas.createLinearGradient(CANVAS_WIDTH/2-CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,0,CANVAS_WIDTH/2+CANVAS_HEIGHT*CANVAS_HEIGHT/CANVAS_WIDTH/2,CANVAS_HEIGHT);
 canvas_grd.addColorStop(0,"white");
@@ -905,7 +909,6 @@ function draw()
 	//update(); // not sure about this...
 }
 
-// not so sure about this.... 
 setInterval(function() {update();/*draw();*/}, 1000/UPS);
 var time_int = Date.now();
 var time_then = Date.now();
