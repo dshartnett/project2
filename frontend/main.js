@@ -14,6 +14,14 @@ var C_PING_TIME = 3000; // ping interval
 var CANVAS_WIDTH = 960;
 var CANVAS_HEIGHT = 360;
 
+var C_MOVE_UP = 1;
+var C_MOVE_DOWN = 2;
+var C_ROTATE_CW = 4;
+var C_ROTATE_CC = 8;
+var C_S_RIGHT = 16;
+var C_S_LEFT = 32;
+var C_P_FIRE = 64;
+
 var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
 var canvas = canvasElement.get(0).getContext("2d");
 canvasElement.appendTo('body');
@@ -691,6 +699,7 @@ function Player(x_pos, y_pos, team)
 	
 	this.vX = 0;
 	this.vY = 0;
+	this.player_command_state = 0;
 	
 	this.charge = 100;
 	this.mass = 1000;
@@ -770,7 +779,7 @@ function Player(x_pos, y_pos, team)
 	
 		hit_fade -= interval;
 		
-		if (hit) {/*damage_sound.play();*/ hit_fade = C_HIT_FADE_MAX; hit=false; /*console.log("damage");*/}
+		if (hit) {damage_sound.play(); hit_fade = C_HIT_FADE_MAX; hit=false; /*console.log("damage");*/}
 		if (this.shield_strength <= 0){dead_sound.play(); this.shield_strength = 100;}
 		if (fire_battery > 0) fire_battery -= C_RATE_OF_FIRE*interval;
 	}
@@ -802,7 +811,7 @@ function Player(x_pos, y_pos, team)
 		canvas.strokeStyle = "gray";
 		canvas.stroke();
 			
-		if(moving){
+		if((this.player_command_state | C_P_FIRE) > C_P_FIRE){ // work on this
 			canvas.beginPath();
 			canvas.moveTo(this.radius*Math.cos(5*Math.PI/6),this.radius*Math.sin(5*Math.PI/6));
 			canvas.lineTo(this.radius*Math.cos(5*Math.PI/6)+10*(Math.random()-.5),this.radius*Math.sin(5*Math.PI/6)-10*Math.random());
@@ -843,6 +852,16 @@ function update()
 	time_int = Date.now() - time_then;
 	//console.log("Global time interval: " + time_int);
 
+	player_arr[0].player_command_state = 0;
+	if (key_down[39]) player_arr[0].player_command_state += C_ROTATE_CW;
+	if (key_down[37]) player_arr[0].player_command_state += C_ROTATE_CC;
+	if (key_down[38]) player_arr[0].player_command_state += C_MOVE_UP;
+	if (key_down[40]) player_arr[0].player_command_state += C_MOVE_DOWN;
+	if (key_down[69]) player_arr[0].player_command_state += C_S_LEFT;
+	if (key_down[82]) player_arr[0].player_command_state += C_S_RIGHT;
+	if (key_down[83]) player_arr[0].player_command_state += C_P_FIRE;
+	
+
 	if (key_down[39]) player_arr[0].rotateRight(time_int);
 	if (key_down[37]) player_arr[0].rotateLeft(time_int);
 	if (key_down[38]) player_arr[0].accelerate(time_int);
@@ -850,7 +869,8 @@ function update()
 	if (key_down[69]) player_arr[0].slideLeft(time_int);
 	if (key_down[82]) player_arr[0].slideRight(time_int);
 	if (key_down[83]) player_arr[0].fire(time_int);
-	
+	//*/
+
 	for (var i = 0; i < PARTICLE_NUM; i++) par_arr[i].update(time_int);
 	for (var i = 0; i < OBJECT_NUM; i++) object_arr[i].update(par_arr,time_int);
 	//for (var i = 0; i < PLAYER_NUM; i++) player_arr[i].update(time_int);
@@ -906,6 +926,7 @@ function draw()
 	canvas.fillText("Update rate: " + uCfr.toFixed(2),10,50);
 	canvas.fillText("uC - dC: " + (uC-dC),10,60);
 	canvas.fillText("time_int: " + time_int.toFixed(2),10,70);
+	canvas.fillText("player_command_state: " + player_arr[0].player_command_state,10,80);
 	//update(); // not sure about this...
 }
 
